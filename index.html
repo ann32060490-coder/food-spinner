@@ -1,177 +1,275 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-TW" class="h-full bg-white">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="今天吃什麼">
-    
-    <title>今天吃什麼？</title>
+    <title>BANANA EATS! 今天吃什麼</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
-
-        body {
-            font-family: 'Noto Sans TC', sans-serif;
-            background-color: #f9f6f1; 
-            background-image:
-                linear-gradient(45deg, #f2ede4 25%, transparent 25%),
-                linear-gradient(-45deg, #f2ede4 25%, transparent 25%),
-                linear-gradient(45deg, transparent 75%, #f2ede4 75%),
-                linear-gradient(-45deg, transparent 75%, #f2ede4 75%);
-            background-size: 60px 60px;
-            /* 讓手機滑動時不會有彈性效果，更像 App */
-            overscroll-behavior: none;
-            /* 預留頂部狀態列空間，避免瀏海擋住 */
-            padding-top: env(safe-area-inset-top);
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Poppins:wght@700;900&display=swap" rel="stylesheet">
+    <script>
+        // 設定 Banana 風格色票
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        banana: { DEFAULT: '#FFE135', dark: '#E6C300' },
+                        dark: '#1A1A1A'
+                    },
+                    fontFamily: {
+                        sans: ['"Poppins"', '"Noto Sans TC"', 'sans-serif']
+                    }
+                }
+            }
         }
+    </script>
+    <style>
+        /* 全域設定：禁止彈性滾動，更像 App */
+        body { overscroll-behavior: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+        /* 隱藏滾動條 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+        /* 指針樣式 - 改為黑色幾何風格 */
         .pointer {
             width: 0; height: 0; 
-            border-left: 12px solid transparent;
-            border-right: 12px solid transparent;
-            border-top: 24px solid #44403c; 
-            position: absolute; top: -10px; left: 50%;
-            transform: translateX(-50%); z-index: 10;
-            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+            border-left: 16px solid transparent;
+            border-right: 16px solid transparent;
+            border-top: 32px solid #1A1A1A; 
+            position: absolute; top: -15px; left: 50%;
+            transform: translateX(-50%); z-index: 20;
+            filter: drop-shadow(0 4px 0px rgba(0,0,0,0.2));
+        }
+        /* 轉盤陰影與邊框優化 */
+        .wheel-container {
+            box-shadow: 0 10px 0px #1A1A1A, 0 15px 20px rgba(0,0,0,0.2);
+            border: 8px solid #1A1A1A;
         }
 
-        @keyframes winner-glow {
-            0% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.5); }
-            70% { box-shadow: 0 0 0 25px rgba(251, 146, 60, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0); }
+        /* 獲勝動畫 - 強烈的黃色閃爍 */
+        @keyframes banana-flash {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 225, 53, 0.8); }
+            50% { box-shadow: 0 0 0 30px rgba(255, 225, 53, 0); }
         }
-        .winner-effect { animation: winner-glow 1.5s infinite; }
+        .winner-effect { animation: banana-flash 0.8s ease-out infinite; }
         
-        .tag-btn { transition: all 0.2s ease; }
-        .tag-btn:active { transform: scale(0.95); }
-
-        .floating-icon {
-            position: absolute; opacity: 0.15; 
-            user-select: none; pointer-events: none; z-index: 0;
-        }
+        /* 按鈕點擊效果 */
+        .pop-btn:active { transform: translateY(4px); box-shadow: none !important; }
     </style>
 </head>
-<body class="h-screen w-screen flex items-center justify-center text-stone-700 overflow-hidden select-none">
+<body class="h-full w-full flex flex-col text-dark safe-area-padding select-none overflow-hidden">
 
-    <div class="floating-icon text-6xl top-10 left-5 -rotate-12">🍕</div>
-    <div class="floating-icon text-5xl top-32 right-8 rotate-12">🍜</div>
-    <div class="floating-icon text-6xl bottom-20 left-10 rotate-6">🍔</div>
-    <div class="floating-icon text-5xl bottom-40 right-10 -rotate-12">🍱</div>
+    <header class="pt-12 pb-4 px-6 flex items-center justify-between bg-white relative z-10">
+        <div>
+            <h1 class="text-4xl font-black tracking-tighter italic uppercase bg-banana inline-block px-2 transform -rotate-2">Banana Eats!</h1>
+            <p class="text-sm font-bold text-gray-500 mt-1 tracking-widest uppercase">Decision Spinner</p>
+        </div>
+        <div class="w-12 h-12 bg-banana rounded-full border-4 border-dark flex items-center justify-center text-2xl shadow-[2px_2px_0_#1A1A1A]">
+            🍌
+        </div>
+    </header>
 
-    <div class="w-full max-w-md bg-white/95 backdrop-blur-sm rounded-[2rem] shadow-2xl border-2 border-white/70 p-6 flex flex-col items-center relative z-10 mx-4" id="main-card">
+    <main class="flex-1 flex flex-col items-center justify-start px-4 pb-8 space-y-6 overflow-y-auto no-scrollbar">
         
-        <header class="text-center mb-5">
-            <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-orange-100 mb-2 text-3xl shadow-sm">😋</div>
-            <h1 class="text-2xl font-bold tracking-wide text-stone-800">今天吃什麼？</h1>
-        </header>
-
-        <div class="w-full mb-5">
-            <div class="flex flex-wrap gap-2 justify-center" id="presetButtons"></div>
+        <div class="w-full">
+            <div class="flex overflow-x-auto no-scrollbar gap-2 py-2 px-1" id="presetButtons">
+                </div>
         </div>
 
-        <div class="w-full mb-6 relative group">
-            <textarea id="inputChoices" rows="2" class="w-full px-4 py-3 bg-stone-50 rounded-2xl border-2 border-stone-100 focus:border-orange-300 focus:ring-2 focus:ring-orange-100 outline-none resize-none text-sm text-stone-600 placeholder-stone-400 shadow-inner" placeholder="輸入選項...">拉麵, 壽司, 義大利麵, 麥當勞, 巷口乾麵</textarea>
+        <div class="w-full relative group">
+             <div class="absolute inset-0 bg-dark translate-x-1 translate-y-1 rounded-2xl"></div>
+            <textarea id="inputChoices" rows="2" class="relative w-full px-4 py-4 bg-white rounded-2xl border-4 border-dark focus:outline-none focus:border-banana text-lg font-bold resize-none placeholder-gray-300 shadow-sm transition-all" placeholder="輸入選項...">拉麵, 壽司, 義大利麵, 麥當勞, 巷口乾麵</textarea>
         </div>
 
-        <div class="relative mb-8 transform transition-transform duration-300">
+        <div class="relative mt-4 transform transition-transform duration-300 hover:scale-[1.02]">
             <div class="pointer"></div>
-            <div class="relative rounded-full overflow-hidden shadow-lg border-[6px] border-white bg-stone-100">
-                <canvas id="wheelCanvas" width="300" height="300" class="block"></canvas>
+            <div class="relative rounded-full overflow-hidden bg-white wheel-container">
+                <canvas id="wheelCanvas" width="320" height="320" class="block"></canvas>
             </div>
         </div>
 
-        <div class="w-full space-y-4 text-center relative z-20">
-            <button id="spinBtn" onclick="spin()" class="w-full py-4 rounded-2xl bg-gradient-to-br from-stone-700 to-stone-800 text-orange-50 font-bold text-lg shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 tracking-widest border-b-4 border-stone-900">
-                <span class="text-2xl">GO</span> <span class="text-sm opacity-90">幫我決定</span>
-            </button>
+         <div class="h-24 flex-shrink-0"></div>
+    </main>
 
-            <div id="resultContainer" class="hidden opacity-0 transition-all duration-500 transform translate-y-2 absolute w-full bottom-20 left-0 z-50">
-                <div class="p-5 bg-white/95 border-2 border-orange-200 rounded-2xl text-center shadow-2xl backdrop-blur-md mx-4">
-                    <p class="text-xs text-orange-500 font-bold uppercase mb-1">命運的安排是</p>
-                    <p class="text-3xl font-extrabold text-stone-800" id="resultText">---</p>
-                    <button onclick="closeResult()" class="mt-3 text-xs text-stone-400 underline">關閉</button>
-                </div>
+    <footer class="fixed bottom-0 left-0 w-full p-4 bg-white/80 backdrop-blur-md border-t-4 border-dark z-50 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <div class="max-w-md mx-auto relative">
+             <div class="absolute inset-0 bg-dark translate-x-1 translate-y-1 rounded-2xl"></div>
+            <button id="spinBtn" onclick="spin()" class="pop-btn relative w-full py-4 rounded-2xl bg-banana text-dark font-black text-2xl shadow-[4px_4px_0_#1A1A1A] transition-all flex items-center justify-center gap-2 uppercase italic border-4 border-dark tracking-wider hover:bg-banana-dark">
+                GO! <span class="text-base font-bold not-italic opacity-80">幫我選</span>
+            </button>
+        </div>
+    </footer>
+
+    <div id="resultContainer" class="fixed inset-0 z-[100] bg-dark/90 backdrop-blur-sm hidden opacity-0 transition-all duration-300 flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm p-8 rounded-[2rem] border-8 border-banana text-center shadow-[8px_8px_0_#1A1A1A] relative transform scale-90 transition-all duration-300" id="resultCard">
+            <p class="text-xl font-black uppercase bg-banana inline-block px-3 -rotate-2 mb-4 shadow-[2px_2px_0_#1A1A1A]">It's...</p>
+            <p class="text-5xl font-black text-dark leading-tight break-words" id="resultText">---</p>
+            <div class="mt-8">
+                 <div class="inline-block relative">
+                     <div class="absolute inset-0 bg-dark translate-x-1 translate-y-1 rounded-xl"></div>
+                    <button onclick="closeResult()" class="pop-btn relative px-8 py-3 bg-white border-4 border-dark rounded-xl font-bold text-lg shadow-[2px_2px_0_#1A1A1A] hover:bg-gray-100">OK! 再轉一次</button>
+                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        // --- 設定區 ---
         const menuPresets = {
-            "⚡隨機": "random", "🇹🇼台式": ["滷肉飯","雞腿便當","牛肉麵","水餃","鹹酥雞"], 
-            "🇯🇵日式": ["拉麵","壽司","丼飯","烏龍麵"], "🍔速食": ["麥當勞","肯德基","披薩"],
-            "🥗健康": ["沙拉","優格","波奇碗"], "🌧️下雨": ["泡麵","外送","水餃"]
+            "🎲 隨機大亂鬥": "random", // 將觸發網路讀取
+            "🇹🇼 台式": ["滷肉飯","雞腿便當","牛肉麵","水餃","鹹酥雞"], 
+            "🇯🇵 日式": ["拉麵","壽司","丼飯","烏龍麵"], 
+            "🍔 速食": ["麥當勞","肯德基","披薩","漢堡王"],
+            "🥗 健康": ["沙拉","優格","波奇碗","健康餐盒"]
         };
-        const allFoods = ["滷肉飯","雞腿便當","牛肉麵","水餃","鹹酥雞","拉麵","壽司","麥當勞","火鍋","燒肉"];
-        
+        // 這裡不再需要 hardcoded 的 allFoods 了！
+
+        // Pop Art 風格高對比配色
+        const colors = ['#FFE135', '#FFFFFF', '#1A1A1A', '#FF4500', '#00CED1', '#FF69B4'];
+        // 對應的文字顏色，確保可讀性
+        const textColors = ['#1A1A1A', '#1A1A1A', '#FFE135', '#FFFFFF', '#1A1A1A', '#1A1A1A'];
+
+        // --- 核心變數 ---
         const canvas = document.getElementById('wheelCanvas');
         const ctx = canvas.getContext('2d');
         const spinBtn = document.getElementById('spinBtn');
         const inputChoices = document.getElementById('inputChoices');
         const resultContainer = document.getElementById('resultContainer');
+        const resultCard = document.getElementById('resultCard');
         const resultText = document.getElementById('resultText');
-        const mainCard = document.getElementById('main-card');
         const presetContainer = document.getElementById('presetButtons');
+        const wheelContainer = document.querySelector('.wheel-container');
 
         let choices = [], startAngle = 0, arc = 0, spinTimeout = null;
         let spinAngleStart = 10, spinTime = 0, spinTimeTotal = 0, isSpinning = false;
-        const colors = ['#A8BCA1', '#D4C4B7', '#B7C4CF', '#E6CBA8', '#CBB2B2', '#A6A2A2', '#94B49F', '#DFD3C3'];
+        let onlineFoodsData = []; // 儲存從網路抓下來的資料
 
-        window.onload = () => { generatePresetButtons(); updateWheel(); };
+        // --- 初始化 ---
+        window.onload = async () => { 
+            generatePresetButtons(); 
+            updateWheel();
+            // 網頁載入時，偷偷在背景去抓資料
+            await fetchOnlineData();
+        };
         inputChoices.addEventListener('input', () => { if(!isSpinning) updateWheel(); });
 
-        function generatePresetButtons() {
-            for (const [key, value] of Object.entries(menuPresets)) {
-                const btn = document.createElement('button');
-                btn.className = "tag-btn px-3 py-2 rounded-xl bg-white text-stone-600 text-xs font-bold border-2 border-stone-100 shadow-sm";
-                btn.innerText = key;
-                btn.onclick = () => applyPreset(value);
-                presetContainer.appendChild(btn);
+        // --- 新功能：從網路讀取資料 (關鍵修改) ---
+        async function fetchOnlineData() {
+            try {
+                // 這裡的 './foods.json' 就是我們剛剛建的檔案
+                const response = await fetch('./foods.json');
+                if (!response.ok) throw new Error('資料讀取失敗');
+                onlineFoodsData = await response.json();
+                console.log('成功載入網路菜單:', onlineFoodsData);
+            } catch (error) {
+                console.error('糟糕，抓不到資料:', error);
+                // 如果失敗的備案
+                onlineFoodsData = ["讀取失敗", "請檢查網路", "或稍後再試"];
             }
         }
+
+        // --- 邏輯函數 ---
+        function generatePresetButtons() {
+            for (const [key, value] of Object.entries(menuPresets)) {
+                // 包一層 div 來做陰影效果
+                const wrapper = document.createElement('div');
+                wrapper.className = "relative group flex-shrink-0";
+                wrapper.innerHTML = `<div class="absolute inset-0 bg-dark translate-x-0.5 translate-y-0.5 rounded-full"></div>`;
+
+                const btn = document.createElement('button');
+                btn.className = "pop-btn relative px-4 py-2 rounded-full bg-white text-dark text-sm font-bold border-2 border-dark shadow-[1px_1px_0_#1A1A1A] hover:bg-banana hover:border-dark transition-all whitespace-nowrap";
+                btn.innerText = key;
+                // 修改這裡：如果是 random，就呼叫新的函數
+                btn.onclick = () => value === "random" ? applyRandomPreset() : applyPreset(value);
+                
+                wrapper.appendChild(btn);
+                presetContainer.appendChild(wrapper);
+            }
+        }
+
+        // 應用普通預設
         function applyPreset(value) {
             if (isSpinning) return;
-            let newChoices = (value === "random") ? allFoods.sort(()=>0.5-Math.random()).slice(0,8) : value;
+            inputChoices.value = value.join(", ");
+            updateWheel();
+            flashInput();
+        }
+
+        // 應用隨機預設 (新功能)
+        function applyRandomPreset() {
+            if (isSpinning) return;
+            if (onlineFoodsData.length === 0) {
+                alert("資料還在讀取中，請等一秒再試試！");
+                return;
+            }
+            // 從網路抓下来的資料裡隨機洗牌，挑 8 個
+            let newChoices = onlineFoodsData.sort(() => 0.5 - Math.random()).slice(0, 8);
             inputChoices.value = newChoices.join(", ");
             updateWheel();
+            flashInput();
         }
+
+        function flashInput() {
+            inputChoices.parentElement.querySelector('.absolute').classList.add('bg-banana');
+             setTimeout(() => {
+                inputChoices.parentElement.querySelector('.absolute').classList.remove('bg-banana');
+            }, 300);
+        }
+
         function getChoices() { return inputChoices.value.split(/[,，\n]/).map(s=>s.trim()).filter(s=>s.length>0); }
+        
         function updateWheel() {
             choices = getChoices(); if(choices.length===0) choices=['請輸入','選項'];
             arc = Math.PI*2/choices.length; drawWheel();
         }
+
+        // --- 繪圖函數 (Banana 風格優化) ---
         function drawWheel() {
             if (!canvas.getContext) return;
-            const outsideRadius=140, textRadius=105, insideRadius=25;
-            ctx.clearRect(0,0,300,300); ctx.strokeStyle="#ffffff"; ctx.lineWidth=3; ctx.font='bold 14px "Noto Sans TC"';
+            const outsideRadius=150, textRadius=110, insideRadius=35;
+            ctx.clearRect(0,0,320,320); 
+            ctx.lineWidth=4; 
+            ctx.font='900 16px "Poppins", "Noto Sans TC"'; // 使用更粗的字體
+
             for(let i=0; i<choices.length; i++) {
                 const angle = startAngle + i*arc;
-                ctx.fillStyle = colors[i%colors.length];
-                ctx.beginPath(); ctx.arc(150,150,outsideRadius,angle,angle+arc,false);
-                ctx.arc(150,150,insideRadius,angle+arc,angle,true);
-                ctx.stroke(); ctx.fill();
-                ctx.save(); ctx.fillStyle="#44403c";
-                ctx.translate(150+Math.cos(angle+arc/2)*textRadius, 150+Math.sin(angle+arc/2)*textRadius);
+                const colorIndex = i % colors.length;
+                ctx.fillStyle = colors[colorIndex];
+                ctx.strokeStyle = "#1A1A1A"; // 黑色邊框
+
+                ctx.beginPath(); ctx.arc(160,160,outsideRadius,angle,angle+arc,false);
+                ctx.arc(160,160,insideRadius,angle+arc,angle,true);
+                ctx.fill(); ctx.stroke();
+
+                ctx.save(); 
+                ctx.fillStyle = textColors[colorIndex]; // 根據背景色決定文字顏色
+                ctx.translate(160+Math.cos(angle+arc/2)*textRadius, 160+Math.sin(angle+arc/2)*textRadius);
                 ctx.rotate(angle+arc/2+Math.PI/2);
-                const text = choices[i].length>6?choices[i].substring(0,5)+"..":choices[i];
-                ctx.fillText(text,-ctx.measureText(text).width/2,0); ctx.restore();
+                const text = choices[i].length>7 ? choices[i].substring(0,6)+".." : choices[i];
+                ctx.fillText(text,-ctx.measureText(text).width/2,4); ctx.restore();
             }
-            ctx.beginPath(); ctx.arc(150,150,insideRadius-4,0,Math.PI*2); ctx.fillStyle="#fff"; ctx.fill();
+            // 中心裝飾 - 香蕉黃配黑邊
+            ctx.beginPath(); ctx.arc(160,160,insideRadius-5,0,Math.PI*2); 
+            ctx.fillStyle="#FFE135"; ctx.strokeStyle="#1A1A1A"; ctx.lineWidth=4; ctx.fill(); ctx.stroke();
+            // 中心小白點
+            ctx.beginPath(); ctx.arc(160,160,insideRadius-15,0,Math.PI*2); ctx.fillStyle="#FFFFFF"; ctx.fill();
         }
+
+        // --- 旋轉邏輯 ---
         function spin() {
             if(isSpinning) return;
             choices = getChoices(); if(choices.length<2) { alert("至少兩個選項"); return; }
-            isSpinning=true; spinBtn.disabled=true; spinBtn.classList.add('opacity-50');
-            resultContainer.classList.add('hidden','opacity-0'); mainCard.classList.remove('winner-effect');
-            spinAngleStart = Math.random()*10+10; spinTime=0; spinTimeTotal=Math.random()*2000+4000;
+            isSpinning=true; spinBtn.disabled=true; spinBtn.classList.add('opacity-50', 'scale-95');
+            wheelContainer.classList.remove('winner-effect');
+            spinAngleStart = Math.random()*10+15; // 加快一點初速度
+            spinTime=0; spinTimeTotal=Math.random()*1500+3000; // 縮短一點總時間 (3-4.5秒)
             rotateWheel();
         }
         function rotateWheel() {
             spinTime += 30;
             if(spinTime >= spinTimeTotal) { stopRotateWheel(); return; }
-            const spinAngle = spinAngleStart - (spinAngleStart * Math.sin(spinTime/spinTimeTotal * (Math.PI/2))); // EaseOutSine simplified
+            const spinAngle = spinAngleStart - (spinAngleStart * Math.sin(spinTime/spinTimeTotal * (Math.PI/2))); 
             startAngle += (spinAngle * Math.PI/180); drawWheel();
             spinTimeout = requestAnimationFrame(rotateWheel);
         }
@@ -180,17 +278,26 @@
             const degrees = startAngle*180/Math.PI+90;
             const index = Math.floor((360-degrees%360)/(arc*180/Math.PI));
             showResult(choices[index]);
-            isSpinning=false; spinBtn.disabled=false; spinBtn.classList.remove('opacity-50');
+            isSpinning=false; spinBtn.disabled=false; spinBtn.classList.remove('opacity-50', 'scale-95');
         }
+        
+        // --- 結果顯示 (彈窗動畫優化) ---
         function showResult(text) {
             resultText.innerText = text;
             resultContainer.classList.remove('hidden');
-            setTimeout(()=> { resultContainer.classList.remove('opacity-0'); mainCard.classList.add('winner-effect'); },50);
+            wheelContainer.classList.add('winner-effect');
+            setTimeout(()=> { 
+                resultContainer.classList.remove('opacity-0'); 
+                resultCard.classList.remove('scale-90');
+            },50);
         }
         function closeResult() {
             resultContainer.classList.add('opacity-0');
-            setTimeout(()=> resultContainer.classList.add('hidden'), 500);
-            mainCard.classList.remove('winner-effect');
+            resultCard.classList.add('scale-90');
+            setTimeout(()=> {
+                resultContainer.classList.add('hidden');
+                wheelContainer.classList.remove('winner-effect');
+            }, 300);
         }
     </script>
 </body>
