@@ -1,0 +1,317 @@
+沒問題！為了徹底解決「連輸入選項都懶」的選擇困難症，我在原本的基礎上增加了**「懶人菜單 (Quick Menu)」**功能。
+🚀 新增功能亮點
+ * 一鍵生成：點擊預設標籤（如：台式、日式、健康餐），自動填入對應的食物清單。
+ * 大亂燉模式：有一個「幫我隨機選」按鈕，會從資料庫中隨機抓取 6-8 樣食物填入，完全不用動腦。
+ * 擴充菜單庫：內建了數十種常見的餐飲選項。
+請將以下完整的代碼覆蓋之前的檔案：
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>今天吃什麼？ | 懶人版轉盤</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f5f5f4; /* Stone-100 */
+        }
+
+        /* 指針樣式 */
+        .pointer {
+            width: 0; 
+            height: 0; 
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 24px solid #44403c; /* Stone-700 */
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+        }
+
+        /* 獲勝時的閃爍光暈動畫 */
+        @keyframes winner-glow {
+            0% { box-shadow: 0 0 0 0 rgba(120, 113, 108, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(120, 113, 108, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(120, 113, 108, 0); }
+        }
+
+        .winner-effect {
+            animation: winner-glow 1.5s infinite;
+        }
+        
+        /* 標籤按鈕的過渡效果 */
+        .tag-btn {
+            transition: all 0.2s ease;
+        }
+        .tag-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center text-stone-700 py-10 px-4">
+
+    <div class="w-full max-w-md bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-white/50 p-6 flex flex-col items-center transition-all duration-500" id="main-card">
+        
+        <header class="text-center mb-4">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-stone-100 mb-2 text-2xl">
+                🎲
+            </div>
+            <h1 class="text-2xl font-bold tracking-wide text-stone-800">今天吃什麼？</h1>
+        </header>
+
+        <div class="w-full mb-4">
+            <p class="text-xs font-bold uppercase tracking-wider text-stone-400 mb-2 pl-1">懶得想？選一個風格：</p>
+            <div class="flex flex-wrap gap-2 justify-center" id="presetButtons">
+                </div>
+        </div>
+
+        <div class="w-full mb-6 relative group">
+            <textarea 
+                id="inputChoices" 
+                rows="2"
+                class="w-full px-4 py-3 bg-stone-50 rounded-xl border border-stone-200 focus:border-stone-400 focus:ring-2 focus:ring-stone-200 outline-none resize-none text-sm transition-all text-stone-600 placeholder-stone-400 shadow-inner"
+                placeholder="手動輸入選項..."
+            >拉麵, 壽司, 義大利麵, 麥當勞, 巷口乾麵</textarea>
+            <div class="text-right mt-1">
+                <button onclick="updateWheel()" class="text-xs text-stone-400 hover:text-stone-600 underline decoration-dotted">手動刷新</button>
+            </div>
+        </div>
+
+        <div class="relative mb-8">
+            <div class="pointer"></div>
+            <div class="relative rounded-full overflow-hidden shadow-2xl border-4 border-white bg-stone-100">
+                <canvas id="wheelCanvas" width="300" height="300" class="block"></canvas>
+            </div>
+        </div>
+
+        <div class="w-full space-y-4 text-center relative z-20">
+            <button 
+                id="spinBtn" 
+                onclick="spin()"
+                class="w-full py-4 rounded-xl bg-stone-700 text-stone-50 font-bold text-lg shadow-lg hover:bg-stone-800 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-2 tracking-widest"
+            >
+                <span>GO</span>
+                <span class="text-sm opacity-70 font-normal">幫我決定</span>
+            </button>
+
+            <div id="resultContainer" class="hidden opacity-0 transition-all duration-500 transform translate-y-2">
+                <div class="p-4 bg-orange-50 border border-orange-100 rounded-xl text-center">
+                    <p class="text-xs text-orange-400 font-bold uppercase mb-1">命運的安排是</p>
+                    <p class="text-2xl font-bold text-stone-800" id="resultText">---</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 預設菜單資料庫 ---
+        const menuPresets = {
+            "⚡ 隨機大亂鬥": "random", // 特殊邏輯
+            "🇹🇼 台式小吃": ["滷肉飯", "雞腿便當", "牛肉麵", "水餃", "鍋貼", "鹹酥雞", "臭豆腐", "蚵仔麵線", "熱炒"],
+            "🇯🇵 日式料理": ["豚骨拉麵", "迴轉壽司", "日式炸豬排", "親子丼", "烏龍麵", "大阪燒", "居酒屋"],
+            "🇺🇸 西式快餐": ["麥當勞", "肯德基", "漢堡王", "Subway", "達美樂披薩", "義大利麵", "牛排"],
+            "🥗 健康清淡": ["水果優格", "雞胸肉沙拉", "Poke波奇碗", "素食自助餐", "健康餐盒", "潤餅"],
+            "🌧️ 下雨天": ["泡麵", "叫外送", "樓下便利商店", "冰箱剩菜", "水餃"]
+        };
+
+        // 所有食物的大池子 (用於隨機生成)
+        const allFoods = [
+            ...menuPresets["🇹🇼 台式小吃"],
+            ...menuPresets["🇯🇵 日式料理"],
+            ...menuPresets["🇺🇸 西式快餐"],
+            ...menuPresets["🥗 健康清淡"],
+            "韓式炸雞", "泰式料理", "火鍋", "燒肉", "麻辣燙"
+        ];
+
+        // --- 核心變數 ---
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const spinBtn = document.getElementById('spinBtn');
+        const inputChoices = document.getElementById('inputChoices');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultText = document.getElementById('resultText');
+        const mainCard = document.getElementById('main-card');
+        const presetContainer = document.getElementById('presetButtons');
+
+        let choices = [];
+        let startAngle = 0;
+        let arc = 0;
+        let spinTimeout = null;
+        let spinAngleStart = 10;
+        let spinTime = 0;
+        let spinTimeTotal = 0;
+        let isSpinning = false;
+
+        const colors = ['#A8BCA1', '#D4C4B7', '#B7C4CF', '#E6CBA8', '#CBB2B2', '#A6A2A2', '#94B49F', '#DFD3C3'];
+
+        // --- 初始化 ---
+        window.onload = () => {
+            generatePresetButtons();
+            updateWheel();
+        };
+
+        inputChoices.addEventListener('input', () => {
+            if(!isSpinning) updateWheel();
+        });
+
+        // --- 新增功能：生成按鈕與處理邏輯 ---
+        function generatePresetButtons() {
+            for (const [key, value] of Object.entries(menuPresets)) {
+                const btn = document.createElement('button');
+                btn.className = "tag-btn px-3 py-1.5 rounded-full bg-stone-200 text-stone-600 text-xs font-medium hover:bg-stone-300 hover:text-stone-800 border border-transparent hover:border-stone-400";
+                btn.innerText = key;
+                btn.onclick = () => applyPreset(key, value);
+                presetContainer.appendChild(btn);
+            }
+        }
+
+        function applyPreset(key, value) {
+            if (isSpinning) return;
+
+            let newChoices = [];
+            
+            if (value === "random") {
+                // 隨機從大池子抓取 6-8 個選項
+                const count = Math.floor(Math.random() * 3) + 6; 
+                const shuffled = allFoods.sort(() => 0.5 - Math.random());
+                newChoices = shuffled.slice(0, count);
+            } else {
+                newChoices = value;
+            }
+
+            // 更新輸入框並重繪轉盤
+            inputChoices.value = newChoices.join(", ");
+            
+            // 視覺反饋：讓輸入框閃一下
+            inputChoices.classList.add('ring-2', 'ring-stone-400');
+            setTimeout(() => inputChoices.classList.remove('ring-2', 'ring-stone-400'), 200);
+
+            updateWheel();
+        }
+
+        // --- 原有邏輯 (保持不變) ---
+
+        function getChoices() {
+            return inputChoices.value.split(/[,，\n]/).map(s => s.trim()).filter(s => s.length > 0);
+        }
+
+        function updateWheel() {
+            choices = getChoices();
+            if (choices.length === 0) choices = ['請輸入', '選項'];
+            arc = Math.PI * 2 / choices.length;
+            drawWheel();
+        }
+
+        function drawWheel() {
+            if (canvas.getContext) {
+                const outsideRadius = 140;
+                const textRadius = 105;
+                const insideRadius = 20;
+
+                ctx.clearRect(0, 0, 300, 300);
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 2;
+                ctx.font = 'bold 14px "Noto Sans TC", sans-serif';
+
+                for (let i = 0; i < choices.length; i++) {
+                    const angle = startAngle + i * arc;
+                    ctx.fillStyle = colors[i % colors.length];
+                    
+                    ctx.beginPath();
+                    ctx.arc(150, 150, outsideRadius, angle, angle + arc, false);
+                    ctx.arc(150, 150, insideRadius, angle + arc, angle, true);
+                    ctx.stroke();
+                    ctx.fill();
+
+                    ctx.save();
+                    ctx.fillStyle = "#44403c";
+                    ctx.translate(150 + Math.cos(angle + arc / 2) * textRadius, 
+                                  150 + Math.sin(angle + arc / 2) * textRadius);
+                    ctx.rotate(angle + arc / 2 + Math.PI / 2);
+                    const text = choices[i];
+                    const displayText = text.length > 6 ? text.substring(0, 5) + '..' : text;
+                    ctx.fillText(displayText, -ctx.measureText(displayText).width / 2, 0);
+                    ctx.restore();
+                }
+                
+                // 中心裝飾
+                ctx.beginPath();
+                ctx.arc(150, 150, insideRadius - 5, 0, Math.PI * 2);
+                ctx.fillStyle = "#f5f5f4";
+                ctx.fill();
+            }
+        }
+
+        function spin() {
+            if (isSpinning) return;
+            choices = getChoices();
+            if (choices.length < 2) { alert("請至少保留兩個選項！"); return; }
+
+            isSpinning = true;
+            spinBtn.disabled = true;
+            spinBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            resultContainer.classList.add('hidden', 'opacity-0');
+            mainCard.classList.remove('winner-effect');
+
+            spinAngleStart = Math.random() * 10 + 10;
+            spinTime = 0;
+            spinTimeTotal = Math.random() * 2000 + 4000;
+            rotateWheel();
+        }
+
+        function rotateWheel() {
+            spinTime += 30;
+            if (spinTime >= spinTimeTotal) {
+                stopRotateWheel();
+                return;
+            }
+            const spinAngle = spinAngleStart - easeOut(spinTime, 0, spinAngleStart, spinTimeTotal);
+            startAngle += (spinAngle * Math.PI / 180);
+            drawWheel();
+            spinTimeout = requestAnimationFrame(rotateWheel);
+        }
+
+        function stopRotateWheel() {
+            cancelAnimationFrame(spinTimeout);
+            const degrees = startAngle * 180 / Math.PI + 90;
+            const arcd = arc * 180 / Math.PI;
+            const index = Math.floor((360 - degrees % 360) / arcd);
+            showResult(choices[index]);
+            isSpinning = false;
+            spinBtn.disabled = false;
+            spinBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        function showResult(text) {
+            resultText.innerText = text;
+            resultContainer.classList.remove('hidden');
+            setTimeout(() => {
+                resultContainer.classList.remove('opacity-0');
+                mainCard.classList.add('winner-effect');
+            }, 50);
+        }
+
+        function easeOut(t, b, c, d) {
+            return c * Math.sin(t/d * (Math.PI/2)) + b;
+        }
+    </script>
+</body>
+</html>
+
+🆕 新功能使用說明
+ * ⚡ 隨機大亂鬥（最推薦）：
+   * 點擊後，系統會從所有資料庫（台式、日式、西式、韓式...等）中，隨機抓取 6~8 種食物混在一起。
+   * 每次點擊，組合都不一樣，適合完全沒想法的時候。
+ * 特定風格標籤：
+   * 點擊「🇹🇼 台式小吃」，轉盤瞬間變成：滷肉飯、雞腿便當、牛肉麵...。
+   * 點擊「🌧️ 下雨天」，轉盤變成：泡麵、叫外送、水餃...（超實用情境）。
+ * 混合使用：
+   * 你可以先點「日式料理」，然後手動把不想吃的「生魚片」刪掉，再按 GO。
+下一步您可以做什麼？
+如果您想要**「作弊功能」（例如：雖然看起來是隨機的，但內定必定選中麥當勞），或者想要增加「音效」**（旋轉時有喀喀聲，選中時有慶祝聲），請告訴我，我可以幫您加上去！
