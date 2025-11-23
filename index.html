@@ -7,11 +7,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>POP EATS! 今天吃什麼</title>
     
-    ) 拿掉。
-    -->
+    <link rel="apple-touch-icon" href="./icon.png">
+    <link rel="icon" type="image/png" href="./icon.png">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Poppins:wght@700;900&display=swap" rel="stylesheet">
     <script>
+        // 設定 Pop 風格色票
         tailwind.config = {
             theme: {
                 extend: {
@@ -27,20 +29,35 @@
         }
     </script>
     <style>
+        /* 全域設定 */
         body { overscroll-behavior: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* 指針樣式 */
         .pointer {
-            width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent;
-            border-top: 32px solid #1A1A1A; position: absolute; top: -15px; left: 50%;
-            transform: translateX(-50%); z-index: 20; filter: drop-shadow(0 4px 0px rgba(0,0,0,0.2));
+            width: 0; height: 0; 
+            border-left: 16px solid transparent;
+            border-right: 16px solid transparent;
+            border-top: 32px solid #1A1A1A; 
+            position: absolute; top: -15px; left: 50%;
+            transform: translateX(-50%); z-index: 20;
+            filter: drop-shadow(0 4px 0px rgba(0,0,0,0.2));
         }
-        .wheel-container { box-shadow: 0 10px 0px #1A1A1A, 0 15px 20px rgba(0,0,0,0.2); border: 8px solid #1A1A1A; }
+        /* 轉盤陰影與邊框 */
+        .wheel-container {
+            box-shadow: 0 10px 0px #1A1A1A, 0 15px 20px rgba(0,0,0,0.2);
+            border: 8px solid #1A1A1A;
+        }
+
+        /* 獲勝動畫 */
         @keyframes pop-flash {
             0%, 100% { box-shadow: 0 0 0 0 rgba(255, 225, 53, 0.8); }
             50% { box-shadow: 0 0 0 30px rgba(255, 225, 53, 0); }
         }
         .winner-effect { animation: pop-flash 0.8s ease-out infinite; }
+        
+        /* 按鈕點擊效果 */
         .pop-btn:active { transform: translateY(4px); box-shadow: none !important; }
     </style>
 </head>
@@ -51,21 +68,30 @@
             <h1 class="text-4xl font-black tracking-tighter italic uppercase bg-pop inline-block px-2 transform -rotate-2">WHAT TO EAT?</h1>
             <p class="text-sm font-bold text-gray-500 mt-1 tracking-widest uppercase">Pop Style Spinner</p>
         </div>
-        <div class="w-12 h-12 bg-pop rounded-full border-4 border-dark flex items-center justify-center text-2xl shadow-[2px_2px_0_#1A1A1A]">🍽️</div>
+        <div class="w-12 h-12 bg-pop rounded-full border-4 border-dark flex items-center justify-center text-2xl shadow-[2px_2px_0_#1A1A1A]">
+            🍽️
+        </div>
     </header>
 
     <main class="flex-1 flex flex-col items-center justify-start px-4 pb-8 space-y-6 overflow-y-auto no-scrollbar">
-        <div class="w-full"><div class="flex overflow-x-auto no-scrollbar gap-2 py-2 px-1" id="presetButtons"></div></div>
+        
+        <div class="w-full">
+            <div class="flex overflow-x-auto no-scrollbar gap-2 py-2 px-1" id="presetButtons">
+                </div>
+        </div>
+
         <div class="w-full relative group">
              <div class="absolute inset-0 bg-dark translate-x-1 translate-y-1 rounded-2xl"></div>
             <textarea id="inputChoices" rows="2" class="relative w-full px-4 py-4 bg-white rounded-2xl border-4 border-dark focus:outline-none focus:border-pop text-lg font-bold resize-none placeholder-gray-300 shadow-sm transition-all" placeholder="輸入選項...">拉麵, 壽司, 義大利麵, 麥當勞, 巷口乾麵</textarea>
         </div>
+
         <div class="relative mt-4 transform transition-transform duration-300 hover:scale-[1.02]">
             <div class="pointer"></div>
             <div class="relative rounded-full overflow-hidden bg-white wheel-container">
                 <canvas id="wheelCanvas" width="320" height="320" class="block"></canvas>
             </div>
         </div>
+
          <div class="h-24 flex-shrink-0"></div>
     </main>
 
@@ -83,7 +109,8 @@
             <p class="text-xl font-black uppercase bg-pop inline-block px-3 -rotate-2 mb-4 shadow-[2px_2px_0_#1A1A1A]">The Choice is...</p>
             <p class="text-5xl font-black text-dark leading-tight break-words" id="resultText">---</p>
             <div class="mt-8">
-                 <div class="inline-block relative"><div class="absolute inset-0 bg-dark translate-x-1 translate-y-1 rounded-xl"></div>
+                 <div class="inline-block relative">
+                     <div class="absolute inset-0 bg-dark translate-x-1 translate-y-1 rounded-xl"></div>
                     <button onclick="closeResult()" class="pop-btn relative px-8 py-3 bg-white border-4 border-dark rounded-xl font-bold text-lg shadow-[2px_2px_0_#1A1A1A] hover:bg-gray-100">OK! 再轉一次</button>
                  </div>
             </div>
@@ -91,38 +118,102 @@
     </div>
 
     <script>
-        const menuPresets = { "🎲 隨機快選": "random", "🇹🇼 台式": ["滷肉飯","雞腿便當","牛肉麵","水餃","鹹酥雞"], "🇯🇵 日式": ["拉麵","壽司","丼飯","烏龍麵"], "🍔 速食": ["麥當勞","肯德基","披薩","漢堡王"], "🥗 健康": ["沙拉","優格","波奇碗","健康餐盒"] };
+        // --- 設定區 ---
+        const menuPresets = {
+            "🎲 隨機快選": "random",
+            "🇹🇼 台式": ["滷肉飯","雞腿便當","牛肉麵","水餃","鹹酥雞"], 
+            "🇯🇵 日式": ["拉麵","壽司","丼飯","烏龍麵"], 
+            "🍔 速食": ["麥當勞","肯德基","披薩","漢堡王"],
+            "🥗 健康": ["沙拉","優格","波奇碗","健康餐盒"]
+        };
+
+        // Pop Art 風格高對比配色
         const colors = ['#FFE135', '#FFFFFF', '#1A1A1A', '#FF4500', '#00CED1', '#FF69B4'];
         const textColors = ['#1A1A1A', '#1A1A1A', '#FFE135', '#FFFFFF', '#1A1A1A', '#1A1A1A'];
-        const canvas = document.getElementById('wheelCanvas'), ctx = canvas.getContext('2d'), spinBtn = document.getElementById('spinBtn'), inputChoices = document.getElementById('inputChoices'), resultContainer = document.getElementById('resultContainer'), resultCard = document.getElementById('resultCard'), resultText = document.getElementById('resultText'), presetContainer = document.getElementById('presetButtons'), wheelContainer = document.querySelector('.wheel-container');
-        let choices = [], startAngle = 0, arc = 0, spinTimeout = null, spinAngleStart = 10, spinTime = 0, spinTimeTotal = 0, isSpinning = false, onlineFoodsData = []; 
 
-        window.onload = async () => { generatePresetButtons(); updateWheel(); await fetchOnlineData(); };
+        // --- 核心變數 ---
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const spinBtn = document.getElementById('spinBtn');
+        const inputChoices = document.getElementById('inputChoices');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultCard = document.getElementById('resultCard');
+        const resultText = document.getElementById('resultText');
+        const presetContainer = document.getElementById('presetButtons');
+        const wheelContainer = document.querySelector('.wheel-container');
+
+        let choices = [], startAngle = 0, arc = 0, spinTimeout = null;
+        let spinAngleStart = 10, spinTime = 0, spinTimeTotal = 0, isSpinning = false;
+        let onlineFoodsData = []; 
+
+        // --- 初始化 ---
+        window.onload = async () => { 
+            generatePresetButtons(); 
+            updateWheel();
+            await fetchOnlineData();
+        };
         inputChoices.addEventListener('input', () => { if(!isSpinning) updateWheel(); });
 
+        // --- 從網路讀取資料 ---
         async function fetchOnlineData() {
-            try { const response = await fetch('./foods.json'); if (!response.ok) throw new Error('失敗'); onlineFoodsData = await response.json();
-            } catch (error) { onlineFoodsData = ["讀取失敗", "請檢查網路"]; }
+            try {
+                const response = await fetch('./foods.json');
+                if (!response.ok) throw new Error('資料讀取失敗');
+                onlineFoodsData = await response.json();
+            } catch (error) {
+                onlineFoodsData = ["讀取失敗", "請檢查網路"];
+            }
         }
+
+        // --- 邏輯函數 ---
         function generatePresetButtons() {
             for (const [key, value] of Object.entries(menuPresets)) {
-                const wrapper = document.createElement('div'); wrapper.className = "relative group flex-shrink-0";
+                const wrapper = document.createElement('div');
+                wrapper.className = "relative group flex-shrink-0";
                 wrapper.innerHTML = `<div class="absolute inset-0 bg-dark translate-x-0.5 translate-y-0.5 rounded-full"></div>`;
                 const btn = document.createElement('button');
                 btn.className = "pop-btn relative px-4 py-2 rounded-full bg-white text-dark text-sm font-bold border-2 border-dark shadow-[1px_1px_0_#1A1A1A] hover:bg-pop hover:border-dark transition-all whitespace-nowrap";
-                btn.innerText = key; btn.onclick = () => value === "random" ? applyRandomPreset() : applyPreset(value);
-                wrapper.appendChild(btn); presetContainer.appendChild(wrapper);
+                btn.innerText = key;
+                btn.onclick = () => value === "random" ? applyRandomPreset() : applyPreset(value);
+                wrapper.appendChild(btn);
+                presetContainer.appendChild(wrapper);
             }
         }
-        function applyPreset(value) { if (isSpinning) return; inputChoices.value = value.join(", "); updateWheel(); flashInput(); }
-        function applyRandomPreset() { if (isSpinning) return; if (onlineFoodsData.length === 0) { alert("資料讀取中..."); return; }
-            let newChoices = onlineFoodsData.sort(() => 0.5 - Math.random()).slice(0, 8); inputChoices.value = newChoices.join(", "); updateWheel(); flashInput();
-        }
-        function flashInput() { inputChoices.parentElement.querySelector('.absolute').classList.add('bg-pop'); setTimeout(() => inputChoices.parentElement.querySelector('.absolute').classList.remove('bg-pop'), 300); }
-        function getChoices() { return inputChoices.value.split(/[,，\n]/).map(s=>s.trim()).filter(s=>s.length>0); }
-        function updateWheel() { choices = getChoices(); if(choices.length===0) choices=['請輸入','選項']; arc = Math.PI*2/choices.length; drawWheel(); }
 
-        // --- 關鍵修改：智慧文字繪圖函數 ---
+        function applyPreset(value) {
+            if (isSpinning) return;
+            inputChoices.value = value.join(", ");
+            updateWheel();
+            flashInput();
+        }
+
+        // 應用隨機預設 (限制8個)
+        function applyRandomPreset() {
+            if (isSpinning) return;
+            if (onlineFoodsData.length === 0) {
+                alert("資料讀取中..."); return;
+            }
+            let newChoices = onlineFoodsData.sort(() => 0.5 - Math.random()).slice(0, 8);
+            inputChoices.value = newChoices.join(", ");
+            updateWheel();
+            flashInput();
+        }
+
+        function flashInput() {
+            inputChoices.parentElement.querySelector('.absolute').classList.add('bg-pop');
+             setTimeout(() => {
+                inputChoices.parentElement.querySelector('.absolute').classList.remove('bg-pop');
+            }, 300);
+        }
+
+        function getChoices() { return inputChoices.value.split(/[,，\n]/).map(s=>s.trim()).filter(s=>s.length>0); }
+        
+        function updateWheel() {
+            choices = getChoices(); if(choices.length===0) choices=['請輸入','選項'];
+            arc = Math.PI*2/choices.length; drawWheel();
+        }
+
+        // --- 智慧文字繪圖函數 ---
         function drawWheel() {
             if (!canvas.getContext) return;
             const outsideRadius=150, textRadius=110, insideRadius=35;
@@ -141,16 +232,10 @@
                 
                 // --- 智慧文字處理 ---
                 let text = choices[i];
-                let fontSize = '16px'; // 預設字體大小
-                // 如果文字太長，縮小字體
+                let fontSize = '16px';
                 if (text.length > 8) { fontSize = '14px'; }
-                // 設定字體
                 ctx.font = `900 ${fontSize} "Poppins", "Noto Sans TC"`;
-                // 如果縮小後還是太長，進行截斷並加省略號
-                // 這裡的閾值 (11) 可以根據實際效果調整
-                if (text.length > 11) {
-                     text = text.substring(0, 10) + "..";
-                }
+                if (text.length > 11) { text = text.substring(0, 10) + ".."; }
                 // -------------------
 
                 ctx.fillText(text,-ctx.measureText(text).width/2,4); ctx.restore();
@@ -159,11 +244,49 @@
             ctx.beginPath(); ctx.arc(160,160,insideRadius-15,0,Math.PI*2); ctx.fillStyle="#FFFFFF"; ctx.fill();
         }
 
-        function spin() { if(isSpinning) return; choices = getChoices(); if(choices.length<2) { alert("至少兩個選項"); return; } isSpinning=true; spinBtn.disabled=true; spinBtn.classList.add('opacity-50', 'scale-95'); wheelContainer.classList.remove('winner-effect'); spinAngleStart = Math.random()*10+15; spinTime=0; spinTimeTotal=Math.random()*1500+3000; rotateWheel(); }
-        function rotateWheel() { spinTime += 30; if(spinTime >= spinTimeTotal) { stopRotateWheel(); return; } const spinAngle = spinAngleStart - (spinAngleStart * Math.sin(spinTime/spinTimeTotal * (Math.PI/2))); startAngle += (spinAngle * Math.PI/180); drawWheel(); spinTimeout = requestAnimationFrame(rotateWheel); }
-        function stopRotateWheel() { cancelAnimationFrame(spinTimeout); const degrees = startAngle*180/Math.PI+90; const index = Math.floor((360-degrees%360)/(arc*180/Math.PI)); showResult(choices[index]); isSpinning=false; spinBtn.disabled=false; spinBtn.classList.remove('opacity-50', 'scale-95'); }
-        function showResult(text) { resultText.innerText = text; resultContainer.classList.remove('hidden'); wheelContainer.classList.add('winner-effect'); setTimeout(()=> { resultContainer.classList.remove('opacity-0'); resultCard.classList.remove('scale-90'); },50); }
-        function closeResult() { resultContainer.classList.add('opacity-0'); resultCard.classList.add('scale-90'); setTimeout(()=> { resultContainer.classList.add('hidden'); wheelContainer.classList.remove('winner-effect'); }, 300); }
+        // --- 旋轉邏輯 ---
+        function spin() {
+            if(isSpinning) return;
+            choices = getChoices(); if(choices.length<2) { alert("至少兩個選項"); return; }
+            isSpinning=true; spinBtn.disabled=true; spinBtn.classList.add('opacity-50', 'scale-95');
+            wheelContainer.classList.remove('winner-effect');
+            spinAngleStart = Math.random()*10+15; 
+            spinTime=0; spinTimeTotal=Math.random()*1500+3000; 
+            rotateWheel();
+        }
+        function rotateWheel() {
+            spinTime += 30;
+            if(spinTime >= spinTimeTotal) { stopRotateWheel(); return; }
+            const spinAngle = spinAngleStart - (spinAngleStart * Math.sin(spinTime/spinTimeTotal * (Math.PI/2))); 
+            startAngle += (spinAngle * Math.PI/180); drawWheel();
+            spinTimeout = requestAnimationFrame(rotateWheel);
+        }
+        function stopRotateWheel() {
+            cancelAnimationFrame(spinTimeout);
+            const degrees = startAngle*180/Math.PI+90;
+            const index = Math.floor((360-degrees%360)/(arc*180/Math.PI));
+            showResult(choices[index]);
+            isSpinning=false; spinBtn.disabled=false; spinBtn.classList.remove('opacity-50', 'scale-95');
+        }
+        
+        // --- 結果顯示 ---
+        function showResult(text) {
+            resultText.innerText = text;
+            resultContainer.classList.remove('hidden');
+            wheelContainer.classList.add('winner-effect');
+            setTimeout(()=> { 
+                resultContainer.classList.remove('opacity-0'); 
+                resultCard.classList.remove('scale-90');
+            },50);
+        }
+        function closeResult() {
+            resultContainer.classList.add('opacity-0');
+            resultCard.classList.add('scale-90');
+            setTimeout(()=> {
+                resultContainer.classList.add('hidden');
+                wheelContainer.classList.remove('winner-effect');
+            }, 300);
+        }
     </script>
 </body>
 </html>
