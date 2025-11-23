@@ -3,153 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>今天吃什麼？ | 豐盛版轉盤</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="今天吃什麼">
+    
+    <title>今天吃什麼？</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
 
-        /* --- 新增：背景紋理與樣式 --- */
         body {
             font-family: 'Noto Sans TC', sans-serif;
-            /* 溫暖米色基底 */
             background-color: #f9f6f1; 
-            /* 使用 CSS 生成淡淡的格子桌布紋理 */
             background-image:
                 linear-gradient(45deg, #f2ede4 25%, transparent 25%),
                 linear-gradient(-45deg, #f2ede4 25%, transparent 25%),
                 linear-gradient(45deg, transparent 75%, #f2ede4 75%),
                 linear-gradient(-45deg, transparent 75%, #f2ede4 75%);
             background-size: 60px 60px;
-            background-position: 0 0, 0 30px, 30px -30px, -30px 0px;
-            /* 防止水平滾動 */
-            overflow-x: hidden; 
+            /* 讓手機滑動時不會有彈性效果，更像 App */
+            overscroll-behavior: none;
+            /* 預留頂部狀態列空間，避免瀏海擋住 */
+            padding-top: env(safe-area-inset-top);
         }
 
-        /* 指針樣式 */
         .pointer {
-            width: 0; 
-            height: 0; 
+            width: 0; height: 0; 
             border-left: 12px solid transparent;
             border-right: 12px solid transparent;
             border-top: 24px solid #44403c; 
-            position: absolute;
-            top: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
+            position: absolute; top: -10px; left: 50%;
+            transform: translateX(-50%); z-index: 10;
             filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
         }
 
-        /* 獲勝時的閃爍光暈動畫 */
         @keyframes winner-glow {
-            0% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.5); } /* 改成暖橘光 */
+            0% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.5); }
             70% { box-shadow: 0 0 0 25px rgba(251, 146, 60, 0); }
             100% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0); }
         }
-
-        .winner-effect {
-            animation: winner-glow 1.5s infinite;
-        }
+        .winner-effect { animation: winner-glow 1.5s infinite; }
         
-        /* 標籤按鈕的過渡效果 */
-        .tag-btn {
-            transition: all 0.2s ease;
-        }
-        .tag-btn:active {
-            transform: scale(0.95);
-        }
+        .tag-btn { transition: all 0.2s ease; }
+        .tag-btn:active { transform: scale(0.95); }
 
-        /* 漂浮裝飾圖示 */
         .floating-icon {
-            position: absolute;
-            opacity: 0.15; /* 很淡，不搶戲 */
-            user-select: none;
-            pointer-events: none;
-            z-index: 0;
+            position: absolute; opacity: 0.15; 
+            user-select: none; pointer-events: none; z-index: 0;
         }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center text-stone-700 py-10 px-4 relative overflow-hidden">
+<body class="h-screen w-screen flex items-center justify-center text-stone-700 overflow-hidden select-none">
 
     <div class="floating-icon text-6xl top-10 left-5 -rotate-12">🍕</div>
     <div class="floating-icon text-5xl top-32 right-8 rotate-12">🍜</div>
     <div class="floating-icon text-6xl bottom-20 left-10 rotate-6">🍔</div>
     <div class="floating-icon text-5xl bottom-40 right-10 -rotate-12">🍱</div>
-    <div class="floating-icon text-4xl top-1/2 left-1/4 rotate-45 opacity-10">🥦</div>
 
-    <div class="w-full max-w-md bg-white/95 backdrop-blur-sm rounded-[2rem] shadow-2xl border-2 border-white/70 p-6 flex flex-col items-center transition-all duration-500 relative z-10" id="main-card">
+    <div class="w-full max-w-md bg-white/95 backdrop-blur-sm rounded-[2rem] shadow-2xl border-2 border-white/70 p-6 flex flex-col items-center relative z-10 mx-4" id="main-card">
         
         <header class="text-center mb-5">
-            <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-orange-100 mb-2 text-3xl shadow-sm">
-                😋
-            </div>
+            <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-orange-100 mb-2 text-3xl shadow-sm">😋</div>
             <h1 class="text-2xl font-bold tracking-wide text-stone-800">今天吃什麼？</h1>
         </header>
 
         <div class="w-full mb-5">
-            <p class="text-xs font-bold uppercase tracking-wider text-stone-400 mb-2 pl-1 text-center">懶得想？選一個風格</p>
-            <div class="flex flex-wrap gap-2 justify-center" id="presetButtons">
-                </div>
+            <div class="flex flex-wrap gap-2 justify-center" id="presetButtons"></div>
         </div>
 
         <div class="w-full mb-6 relative group">
-            <textarea 
-                id="inputChoices" 
-                rows="2"
-                class="w-full px-4 py-3 bg-stone-50 rounded-2xl border-2 border-stone-100 focus:border-orange-300 focus:ring-2 focus:ring-orange-100 outline-none resize-none text-sm transition-all text-stone-600 placeholder-stone-400 shadow-inner"
-                placeholder="手動輸入選項..."
-            >拉麵, 壽司, 義大利麵, 麥當勞, 巷口乾麵</textarea>
-            <div class="text-right mt-1">
-                <button onclick="updateWheel()" class="text-xs text-stone-400 hover:text-orange-500 underline decoration-dotted transition-colors">手動刷新轉盤</button>
-            </div>
+            <textarea id="inputChoices" rows="2" class="w-full px-4 py-3 bg-stone-50 rounded-2xl border-2 border-stone-100 focus:border-orange-300 focus:ring-2 focus:ring-orange-100 outline-none resize-none text-sm text-stone-600 placeholder-stone-400 shadow-inner" placeholder="輸入選項...">拉麵, 壽司, 義大利麵, 麥當勞, 巷口乾麵</textarea>
         </div>
 
-        <div class="relative mb-8 transform hover:scale-[1.02] transition-transform duration-300">
+        <div class="relative mb-8 transform transition-transform duration-300">
             <div class="pointer"></div>
-            <div class="relative rounded-full overflow-hidden shadow-[0_10px_30px_-10px_rgba(0,0,0,0.2)] border-[6px] border-white bg-stone-100">
+            <div class="relative rounded-full overflow-hidden shadow-lg border-[6px] border-white bg-stone-100">
                 <canvas id="wheelCanvas" width="300" height="300" class="block"></canvas>
             </div>
         </div>
 
         <div class="w-full space-y-4 text-center relative z-20">
-            <button 
-                id="spinBtn" 
-                onclick="spin()"
-                class="w-full py-4 rounded-2xl bg-gradient-to-br from-stone-700 to-stone-800 text-orange-50 font-bold text-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-2 tracking-widest border-b-4 border-stone-900"
-            >
-                <span class="text-2xl">GO</span>
-                <span class="text-sm opacity-90 font-medium">幫我決定！</span>
+            <button id="spinBtn" onclick="spin()" class="w-full py-4 rounded-2xl bg-gradient-to-br from-stone-700 to-stone-800 text-orange-50 font-bold text-lg shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 tracking-widest border-b-4 border-stone-900">
+                <span class="text-2xl">GO</span> <span class="text-sm opacity-90">幫我決定</span>
             </button>
 
-            <div id="resultContainer" class="hidden opacity-0 transition-all duration-500 transform translate-y-2">
-                <div class="p-5 bg-orange-50/80 border-2 border-orange-200 rounded-2xl text-center shadow-sm backdrop-blur-sm">
-                    <p class="text-xs text-orange-500 font-bold uppercase mb-1 tracking-wider">命運的安排是</p>
+            <div id="resultContainer" class="hidden opacity-0 transition-all duration-500 transform translate-y-2 absolute w-full bottom-20 left-0 z-50">
+                <div class="p-5 bg-white/95 border-2 border-orange-200 rounded-2xl text-center shadow-2xl backdrop-blur-md mx-4">
+                    <p class="text-xs text-orange-500 font-bold uppercase mb-1">命運的安排是</p>
                     <p class="text-3xl font-extrabold text-stone-800" id="resultText">---</p>
+                    <button onclick="closeResult()" class="mt-3 text-xs text-stone-400 underline">關閉</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- 預設菜單資料庫 (保持不變) ---
         const menuPresets = {
-            "⚡ 隨機大亂鬥": "random",
-            "🇹🇼 台式小吃": ["滷肉飯", "雞腿便當", "牛肉麵", "水餃", "鍋貼", "鹹酥雞", "臭豆腐", "蚵仔麵線", "熱炒"],
-            "🇯🇵 日式料理": ["豚骨拉麵", "迴轉壽司", "日式炸豬排", "親子丼", "烏龍麵", "大阪燒", "居酒屋"],
-            "🇺🇸 西式快餐": ["麥當勞", "肯德基", "漢堡王", "Subway", "達美樂披薩", "義大利麵", "牛排"],
-            "🥗 健康清淡": ["水果優格", "雞胸肉沙拉", "Poke波奇碗", "素食自助餐", "健康餐盒", "潤餅"],
-            "🌧️ 下雨天": ["泡麵", "叫外送", "樓下便利商店", "冰箱剩菜", "水餃"]
+            "⚡隨機": "random", "🇹🇼台式": ["滷肉飯","雞腿便當","牛肉麵","水餃","鹹酥雞"], 
+            "🇯🇵日式": ["拉麵","壽司","丼飯","烏龍麵"], "🍔速食": ["麥當勞","肯德基","披薩"],
+            "🥗健康": ["沙拉","優格","波奇碗"], "🌧️下雨": ["泡麵","外送","水餃"]
         };
-
-        const allFoods = [
-            ...menuPresets["🇹🇼 台式小吃"],
-            ...menuPresets["🇯🇵 日式料理"],
-            ...menuPresets["🇺🇸 西式快餐"],
-            ...menuPresets["🥗 健康清淡"],
-            "韓式炸雞", "泰式料理", "火鍋", "燒肉", "麻辣燙"
-        ];
-
-        // --- 核心變數 ---
+        const allFoods = ["滷肉飯","雞腿便當","牛肉麵","水餃","鹹酥雞","拉麵","壽司","麥當勞","火鍋","燒肉"];
+        
         const canvas = document.getElementById('wheelCanvas');
         const ctx = canvas.getContext('2d');
         const spinBtn = document.getElementById('spinBtn');
@@ -159,162 +115,82 @@
         const mainCard = document.getElementById('main-card');
         const presetContainer = document.getElementById('presetButtons');
 
-        let choices = [];
-        let startAngle = 0;
-        let arc = 0;
-        let spinTimeout = null;
-        let spinAngleStart = 10;
-        let spinTime = 0;
-        let spinTimeTotal = 0;
-        let isSpinning = false;
-
-        // 稍微調整配色，更暖一點
+        let choices = [], startAngle = 0, arc = 0, spinTimeout = null;
+        let spinAngleStart = 10, spinTime = 0, spinTimeTotal = 0, isSpinning = false;
         const colors = ['#A8BCA1', '#D4C4B7', '#B7C4CF', '#E6CBA8', '#CBB2B2', '#A6A2A2', '#94B49F', '#DFD3C3'];
 
-        // --- 初始化 ---
-        window.onload = () => {
-            generatePresetButtons();
-            updateWheel();
-        };
+        window.onload = () => { generatePresetButtons(); updateWheel(); };
+        inputChoices.addEventListener('input', () => { if(!isSpinning) updateWheel(); });
 
-        inputChoices.addEventListener('input', () => {
-            if(!isSpinning) updateWheel();
-        });
-
-        // --- 邏輯函數 (保持不變) ---
         function generatePresetButtons() {
             for (const [key, value] of Object.entries(menuPresets)) {
                 const btn = document.createElement('button');
-                // 更新按鈕樣式
-                btn.className = "tag-btn px-3 py-2 rounded-xl bg-white text-stone-600 text-xs font-bold hover:bg-orange-100 hover:text-orange-700 border-2 border-stone-100 hover:border-orange-200 shadow-sm transition-all";
+                btn.className = "tag-btn px-3 py-2 rounded-xl bg-white text-stone-600 text-xs font-bold border-2 border-stone-100 shadow-sm";
                 btn.innerText = key;
-                btn.onclick = () => applyPreset(key, value);
+                btn.onclick = () => applyPreset(value);
                 presetContainer.appendChild(btn);
             }
         }
-
-        function applyPreset(key, value) {
+        function applyPreset(value) {
             if (isSpinning) return;
-            let newChoices = [];
-            if (value === "random") {
-                const count = Math.floor(Math.random() * 3) + 6; 
-                const shuffled = allFoods.sort(() => 0.5 - Math.random());
-                newChoices = shuffled.slice(0, count);
-            } else {
-                newChoices = value;
-            }
+            let newChoices = (value === "random") ? allFoods.sort(()=>0.5-Math.random()).slice(0,8) : value;
             inputChoices.value = newChoices.join(", ");
-            inputChoices.classList.add('ring-2', 'ring-orange-300', 'border-orange-300');
-            setTimeout(() => inputChoices.classList.remove('ring-2', 'ring-orange-300', 'border-orange-300'), 300);
             updateWheel();
         }
-
-        function getChoices() {
-            return inputChoices.value.split(/[,，\n]/).map(s => s.trim()).filter(s => s.length > 0);
-        }
-
+        function getChoices() { return inputChoices.value.split(/[,，\n]/).map(s=>s.trim()).filter(s=>s.length>0); }
         function updateWheel() {
-            choices = getChoices();
-            if (choices.length === 0) choices = ['請輸入', '選項'];
-            arc = Math.PI * 2 / choices.length;
-            drawWheel();
+            choices = getChoices(); if(choices.length===0) choices=['請輸入','選項'];
+            arc = Math.PI*2/choices.length; drawWheel();
         }
-
         function drawWheel() {
-            if (canvas.getContext) {
-                const outsideRadius = 140;
-                const textRadius = 105;
-                const insideRadius = 25; // 稍微加大內圓
-
-                ctx.clearRect(0, 0, 300, 300);
-                ctx.strokeStyle = "#ffffff";
-                ctx.lineWidth = 3;
-                ctx.font = 'bold 14px "Noto Sans TC", sans-serif';
-
-                for (let i = 0; i < choices.length; i++) {
-                    const angle = startAngle + i * arc;
-                    ctx.fillStyle = colors[i % colors.length];
-                    
-                    ctx.beginPath();
-                    ctx.arc(150, 150, outsideRadius, angle, angle + arc, false);
-                    ctx.arc(150, 150, insideRadius, angle + arc, angle, true);
-                    ctx.stroke();
-                    ctx.fill();
-
-                    ctx.save();
-                    ctx.fillStyle = "#44403c";
-                    ctx.translate(150 + Math.cos(angle + arc / 2) * textRadius, 
-                                  150 + Math.sin(angle + arc / 2) * textRadius);
-                    ctx.rotate(angle + arc / 2 + Math.PI / 2);
-                    const text = choices[i];
-                    const displayText = text.length > 6 ? text.substring(0, 5) + '..' : text;
-                    ctx.fillText(displayText, -ctx.measureText(displayText).width / 2, 0);
-                    ctx.restore();
-                }
-                
-                // 中心裝飾
-                ctx.beginPath();
-                ctx.arc(150, 150, insideRadius - 4, 0, Math.PI * 2);
-                ctx.fillStyle = "#fff";
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(150, 150, insideRadius - 8, 0, Math.PI * 2);
-                ctx.fillStyle = "#f5f5f4";
-                ctx.fill();
+            if (!canvas.getContext) return;
+            const outsideRadius=140, textRadius=105, insideRadius=25;
+            ctx.clearRect(0,0,300,300); ctx.strokeStyle="#ffffff"; ctx.lineWidth=3; ctx.font='bold 14px "Noto Sans TC"';
+            for(let i=0; i<choices.length; i++) {
+                const angle = startAngle + i*arc;
+                ctx.fillStyle = colors[i%colors.length];
+                ctx.beginPath(); ctx.arc(150,150,outsideRadius,angle,angle+arc,false);
+                ctx.arc(150,150,insideRadius,angle+arc,angle,true);
+                ctx.stroke(); ctx.fill();
+                ctx.save(); ctx.fillStyle="#44403c";
+                ctx.translate(150+Math.cos(angle+arc/2)*textRadius, 150+Math.sin(angle+arc/2)*textRadius);
+                ctx.rotate(angle+arc/2+Math.PI/2);
+                const text = choices[i].length>6?choices[i].substring(0,5)+"..":choices[i];
+                ctx.fillText(text,-ctx.measureText(text).width/2,0); ctx.restore();
             }
+            ctx.beginPath(); ctx.arc(150,150,insideRadius-4,0,Math.PI*2); ctx.fillStyle="#fff"; ctx.fill();
         }
-
         function spin() {
-            if (isSpinning) return;
-            choices = getChoices();
-            if (choices.length < 2) { alert("請至少保留兩個選項！"); return; }
-
-            isSpinning = true;
-            spinBtn.disabled = true;
-            spinBtn.classList.add('opacity-80', 'scale-95'); // 按鈕動畫優化
-            resultContainer.classList.add('hidden', 'opacity-0');
-            mainCard.classList.remove('winner-effect');
-
-            spinAngleStart = Math.random() * 10 + 10;
-            spinTime = 0;
-            spinTimeTotal = Math.random() * 2000 + 4000;
+            if(isSpinning) return;
+            choices = getChoices(); if(choices.length<2) { alert("至少兩個選項"); return; }
+            isSpinning=true; spinBtn.disabled=true; spinBtn.classList.add('opacity-50');
+            resultContainer.classList.add('hidden','opacity-0'); mainCard.classList.remove('winner-effect');
+            spinAngleStart = Math.random()*10+10; spinTime=0; spinTimeTotal=Math.random()*2000+4000;
             rotateWheel();
         }
-
         function rotateWheel() {
             spinTime += 30;
-            if (spinTime >= spinTimeTotal) {
-                stopRotateWheel();
-                return;
-            }
-            const spinAngle = spinAngleStart - easeOut(spinTime, 0, spinAngleStart, spinTimeTotal);
-            startAngle += (spinAngle * Math.PI / 180);
-            drawWheel();
+            if(spinTime >= spinTimeTotal) { stopRotateWheel(); return; }
+            const spinAngle = spinAngleStart - (spinAngleStart * Math.sin(spinTime/spinTimeTotal * (Math.PI/2))); // EaseOutSine simplified
+            startAngle += (spinAngle * Math.PI/180); drawWheel();
             spinTimeout = requestAnimationFrame(rotateWheel);
         }
-
         function stopRotateWheel() {
             cancelAnimationFrame(spinTimeout);
-            const degrees = startAngle * 180 / Math.PI + 90;
-            const arcd = arc * 180 / Math.PI;
-            const index = Math.floor((360 - degrees % 360) / arcd);
+            const degrees = startAngle*180/Math.PI+90;
+            const index = Math.floor((360-degrees%360)/(arc*180/Math.PI));
             showResult(choices[index]);
-            isSpinning = false;
-            spinBtn.disabled = false;
-            spinBtn.classList.remove('opacity-80', 'scale-95');
+            isSpinning=false; spinBtn.disabled=false; spinBtn.classList.remove('opacity-50');
         }
-
         function showResult(text) {
             resultText.innerText = text;
             resultContainer.classList.remove('hidden');
-            setTimeout(() => {
-                resultContainer.classList.remove('opacity-0');
-                mainCard.classList.add('winner-effect');
-            }, 50);
+            setTimeout(()=> { resultContainer.classList.remove('opacity-0'); mainCard.classList.add('winner-effect'); },50);
         }
-
-        function easeOut(t, b, c, d) {
-            return c * Math.sin(t/d * (Math.PI/2)) + b;
+        function closeResult() {
+            resultContainer.classList.add('opacity-0');
+            setTimeout(()=> resultContainer.classList.add('hidden'), 500);
+            mainCard.classList.remove('winner-effect');
         }
     </script>
 </body>
